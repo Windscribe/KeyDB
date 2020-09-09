@@ -1902,6 +1902,13 @@ void readSyncBulkPayload(connection *conn) {
     int fUpdate = g_pserver->fActiveReplica || g_pserver->enable_multimaster;
     redisMaster *mi = (redisMaster*)connGetPrivateData(conn);
 
+    list masters = *g_pserver->masters;
+
+    // If we have healthy masters, and this is a new master
+    if (mi->new_master && masters.len > 1) {
+        goto setup;
+    }
+
     serverAssert(GlobalLocksAcquired());
 
     /* Static vars used to hold the EOF mark, and the last bytes received
@@ -2229,6 +2236,10 @@ void readSyncBulkPayload(connection *conn) {
         mi->repl_transfer_fd = -1;
         mi->repl_transfer_tmpfile = NULL;
     }
+
+    goto setup;
+
+setup:
 
     /* Final setup of the connected slave <- master link */
     replicationCreateMasterClient(mi,mi->repl_transfer_s,rsi.repl_stream_db);
@@ -3042,6 +3053,13 @@ struct redisMaster *replicationAddMaster(char *ip, int port) {
                               NULL);
 
     mi->repl_state = REPL_STATE_CONNECT;
+
+    // If we have other masters, this is a new master and should not sync
+    list masters = *g_pserver->masters;
+    if (g_pserver->enable_multimaster && masters.len > 1) {
+        mi->new_master = true;
+    }
+
     return mi;
 }
 

@@ -1579,6 +1579,7 @@ struct redisMaster {
     char *masterauth;               /* AUTH with this password with master */
     char *masterhost;               /* Hostname of master */
     int masterport;                 /* Port of master */
+    bool new_master;                /* New master flag. Used to skip syncing in multi-master mode */
     client *cached_master;          /* Cached master to be reused for PSYNC. */
     client *master;
     /* The following two fields is where we store master PSYNC replid/offset
